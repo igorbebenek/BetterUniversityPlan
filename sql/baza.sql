@@ -1,67 +1,67 @@
-﻿
-CREATE TABLE Wydzial (
-                         id INT AUTO_INCREMENT PRIMARY KEY,
-                         nazwa VARCHAR(255) NOT NULL,
-                         skrot VARCHAR(50) NOT NULL
+﻿CREATE TABLE Wydzial (
+                         id INTEGER PRIMARY KEY,
+                         nazwa TEXT NOT NULL,
+                         skrot TEXT NOT NULL
 );
 
 CREATE TABLE Sala_z_budynkiem (
-                                  id INT AUTO_INCREMENT PRIMARY KEY,
-                                  budynek_sala VARCHAR(255) NOT NULL,
-                                  wydzial_id INT NOT NULL,
+                                  id INTEGER PRIMARY KEY,
+                                  budynek_sala TEXT NOT NULL,
+                                  wydzial_id INTEGER NOT NULL,
                                   FOREIGN KEY (wydzial_id) REFERENCES Wydzial(id) ON DELETE CASCADE
 );
 
 CREATE TABLE Tok_studiow (
-                             id INT AUTO_INCREMENT PRIMARY KEY,
-                             typ VARCHAR(50) NOT NULL,
-                             tryb VARCHAR(50) NOT NULL,
-                             typ_skrot VARCHAR(10) NOT NULL,
-                             tryb_skrot VARCHAR(10) NOT NULL
+                             id INTEGER PRIMARY KEY,
+                             typ TEXT NOT NULL,
+                             tryb TEXT NOT NULL,
+                             typ_skrot TEXT NOT NULL,
+                             tryb_skrot TEXT NOT NULL
 );
 
 CREATE TABLE Grupa (
-                       id INT AUTO_INCREMENT PRIMARY KEY,
-                       nazwa VARCHAR(255) NOT NULL
+                       id INTEGER PRIMARY KEY,
+                       nazwa TEXT NOT NULL
 );
 
 CREATE TABLE Przedmiot (
-                           id INT AUTO_INCREMENT PRIMARY KEY,
-                           nazwa VARCHAR(255) NOT NULL,
-                           forma VARCHAR(50) NOT NULL,
-                           tok_studiow_id INT NOT NULL,
+                           id INTEGER PRIMARY KEY,
+                           nazwa TEXT NOT NULL,
+                           forma TEXT NOT NULL,
+                           tok_studiow_id INTEGER NOT NULL,
                            FOREIGN KEY (tok_studiow_id) REFERENCES Tok_studiow(id) ON DELETE CASCADE
 );
+
 CREATE TABLE Student (
-                         id INT PRIMARY KEY
+                         id INTEGER PRIMARY KEY
 );
 
 CREATE TABLE Grupa_Student (
-                               grupa_id INT NOT NULL,
-                               student_id INT NOT NULL,
+                               grupa_id INTEGER NOT NULL,
+                               student_id INTEGER NOT NULL,
                                PRIMARY KEY (grupa_id, student_id),
                                FOREIGN KEY (grupa_id) REFERENCES Grupa(id) ON DELETE CASCADE,
                                FOREIGN KEY (student_id) REFERENCES Student(id) ON DELETE CASCADE
 );
 
 CREATE TABLE Wykladowca (
-                            id INT AUTO_INCREMENT PRIMARY KEY,
-                            nazwisko_imie VARCHAR(255) NOT NULL
+                            id INTEGER PRIMARY KEY,
+                            nazwisko_imie TEXT NOT NULL
 );
 
 CREATE TABLE Zajecia (
-                         id INT AUTO_INCREMENT PRIMARY KEY,
-                         data_start DATETIME NOT NULL,
-                         data_koniec DATETIME NOT NULL,
-                         zastepca VARCHAR(255),
-                         semestr INT NOT NULL,
-                         wykladowca_id INT NOT NULL,
-                         wydzial_id INT NOT NULL,
-                         grupa_id INT NOT NULL,
-                         tok_studiow_id INT NOT NULL,
-                         przedmiot_id INT NOT NULL,
-                         sala_id INT NOT NULL,
-                         student_id INT,
+                         id INTEGER PRIMARY KEY,
+                         data_start TEXT NOT NULL,
+                         data_koniec TEXT NOT NULL,
+                         zastepca TEXT,
+                         semestr INTEGER NOT NULL,
+                         wykladowca_id INTEGER NOT NULL,
+                         wydzial_id INTEGER NOT NULL,
+                         grupa_id INTEGER NOT NULL,
+                         tok_studiow_id INTEGER NOT NULL,
+                         przedmiot_id INTEGER NOT NULL,
+                         sala_id INTEGER NOT NULL,
+                         student_id INTEGER,
                          FOREIGN KEY (wykladowca_id) REFERENCES Wykladowca(id) ON DELETE CASCADE,
                          FOREIGN KEY (wydzial_id) REFERENCES Wydzial(id) ON DELETE CASCADE,
                          FOREIGN KEY (grupa_id) REFERENCES Grupa(id) ON DELETE CASCADE,
