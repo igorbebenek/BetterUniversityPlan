@@ -1,6 +1,6 @@
 <?php
-ini_set('max_execution_time', 0);
-ini_set('memory_limit', '512M');
+set_time_limit(3000);
+
 function fetchWithCurl($urls) {
     $multiCurl = curl_multi_init();
     $curlHandles = [];
@@ -14,9 +14,10 @@ function fetchWithCurl($urls) {
         curl_multi_add_handle($multiCurl, $curlHandles[$key]);
     }
 
+    $active = null;
     do {
         $status = curl_multi_exec($multiCurl, $active);
-        curl_multi_select($multiCurl);
+        curl_multi_select($multiCurl, 0.5);
     } while ($active && $status == CURLM_OK);
 
     foreach ($curlHandles as $key => $ch) {
@@ -42,12 +43,27 @@ function saveToFile($filename, $data) {
 
     $existingData[] = $data;
 
-    file_put_contents($filename, json_encode($existingData, JSON_PRETTY_PRINT));
+    file_put_contents($filename, json_encode($existingData, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
 }
 
-function scrapeAllStudentsWithCurl($startDate, $endDate, $batchSize = 100) {
+function fetchTeacherSchedule($teacherName, $startDate, $endDate) {
+    $url = "https://plan.zut.edu.pl/schedule_student.php?teacher=" . urlencode($teacherName) . "&start=" . urlencode($startDate) . "&end=" . urlencode($endDate);
+    
+    $ch = curl_init();
+    curl_setopt($ch, CURLOPT_URL, $url);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_TIMEOUT, 10);
+    
+    $response = curl_exec($ch);
+    curl_close($ch);
+
+    return json_decode($response, true);
+}
+
+function scrapeAllStudentsWithTeachers($startDate, $endDate, $batchSize = 100) {
     $filename = 'results.txt';
-    $maxIndex = 99999;
+    $maxIndex = 51555;
+    $teachers = [];
 
     for ($startIndex = 50000; $startIndex <= $maxIndex; $startIndex += $batchSize) {
         $urls = [];
@@ -60,16 +76,48 @@ function scrapeAllStudentsWithCurl($startDate, $endDate, $batchSize = 100) {
 
         $results = fetchWithCurl($urls);
 
-        foreach ($results as $studentNumber => $data) {
-            if (!empty($data)) {
-                echo "Dane znalezione dla studenta: $studentNumber\n";
-                saveToFile($filename, [
-                    'studentNumber' => $studentNumber,
-                    'schedule' => $data
-                ]);
-            } else {
-                echo "Brak danych dla studenta: $studentNumber\n";
+$batchResults = [];
+
+foreach ($results as $studentNumber => $data) {
+    if (!empty($data) && count($data) > 1) {
+        echo "Dane znalezione dla studenta: $studentNumber\n";
+
+        foreach ($data as $lesson) {
+            if (isset($lesson['worker']) && !in_array($lesson['worker'], $teachers)) {
+                $teachers[] = $lesson['worker'];
             }
+        }
+
+        $batchResults[] = [
+            'studentNumber' => $studentNumber,
+            'schedule' => $data
+        ];
+    } else {
+        echo "Brak danych dla studenta: $studentNumber\n";
+    }
+
+    if (count($batchResults) >= 100) {
+            saveToFile($filename, $batchResults);
+            $batchResults = [];
+        }
+    }
+
+    if (count($batchResults) > 0) {
+        saveToFile($filename, $batchResults);
+    }
+}
+
+    foreach ($teachers as $teacherName) {
+        echo "Scrapujê plan wyk³adowcy: $teacherName\n";
+        $teacherSchedule = fetchTeacherSchedule($teacherName, $startDate, $endDate);
+        if (!empty($teacherSchedule)) {
+
+            saveToFile('teachers_results.txt', [
+                'teacherName' => $teacherName,
+                'schedule' => $teacherSchedule
+            ]);
+        } else {
+            echo "Brak danych dla wyk³adowcy: $teacherName\n";
         }
     }
 }
@@ -77,5 +125,6 @@ function scrapeAllStudentsWithCurl($startDate, $endDate, $batchSize = 100) {
 $startDate = '2025-01-13T00:00:00+01:00';
 $endDate = '2025-01-20T00:00:00+01:00';
 
-scrapeAllStudentsWithCurl($startDate, $endDate);
+scrapeAllStudentsWithTeachers($startDate, $endDate);
+
 ?>
