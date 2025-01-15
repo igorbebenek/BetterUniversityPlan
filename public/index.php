@@ -1,56 +1,35 @@
 <?php
+
 require_once __DIR__ . DIRECTORY_SEPARATOR . '..' . DIRECTORY_SEPARATOR . 'autoload.php';
 
 $config = new \App\Service\Config();
 $templating = new \App\Service\Templating();
 $router = new \App\Service\Router();
 
-$action = $_REQUEST['action'] ?? 'album-index';
+$action = $_REQUEST['action'] ?? null;
 
 switch ($action) {
-    case 'album-index':
-        $controller = new \App\Controller\AlbumController();
+    case 'zajecia-index':
+    case null:
+        $controller = new \App\Controller\ZajeciaController();
         $view = $controller->indexAction($templating, $router);
         break;
-    case 'album-create':
-        $controller = new \App\Controller\AlbumController();
-        $view = $controller->createAction($_REQUEST['album'] ?? null, $templating, $router);
+    case 'zajecia-create':
+        $controller = new \App\Controller\ZajeciaController();
+        $view = $controller->createAction($_REQUEST['lesson'] ?? null, $templating, $router);
         break;
-    case 'album-edit':
-        $controller = new \App\Controller\AlbumController();
-        $view = $controller->editAction($_REQUEST['id'] ?? 0, $_REQUEST['album'] ?? null, $templating, $router);
+    case 'zajecia-edit':
+        $controller = new \App\Controller\ZajeciaController();
+        $view = $controller->editAction((int)($_REQUEST['id'] ?? 0), $_REQUEST['lesson'] ?? null, $templating, $router);
         break;
-    case 'album-show':
-        $controller = new \App\Controller\AlbumController();
-        $view = $controller->showAction($_REQUEST['id'] ?? 0, $templating, $router);
+    case 'zajecia-show':
+        $controller = new \App\Controller\ZajeciaController();
+        $view = $controller->showAction((int)($_REQUEST['id'] ?? 0), $templating, $router);
         break;
-    case 'album-delete':
-        $controller = new \App\Controller\AlbumController();
-        $view = $controller->deleteAction($_REQUEST['id'] ?? 0, $router);
-        break;
-    case 'post-index':
-        $controller = new \App\Controller\PostController();
-        $view = $controller->indexAction($templating, $router);
-        break;
-    case 'post-create':
-        $controller = new \App\Controller\PostController();
-        $view = $controller->createAction($_REQUEST['post'] ?? null, $templating, $router);
-        break;
-    case 'post-edit':
-        $controller = new \App\Controller\PostController();
-        $view = $controller->editAction($_REQUEST['id'] ?? 0, $_REQUEST['post'] ?? null, $templating, $router);
-        break;
-    case 'post-show':
-        $controller = new \App\Controller\PostController();
-        $view = $controller->showAction($_REQUEST['id'] ?? 0, $templating, $router);
-        break;
-    case 'post-delete':
-        $controller = new \App\Controller\PostController();
-        $view = $controller->deleteAction($_REQUEST['id'] ?? 0, $router);
-        break;
-    case 'info':
-        $controller = new \App\Controller\InfoController();
-        $view = $controller->infoAction();
+    case 'zajecia-delete':
+        $controller = new \App\Controller\ZajeciaController();
+        $controller->deleteAction((int)($_REQUEST['id'] ?? 0), $router);
+        $view = null;
         break;
     default:
         $view = 'Not found';

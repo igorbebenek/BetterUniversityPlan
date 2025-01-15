@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Service;
 
 use App\Exception\ConfigException;
@@ -16,6 +17,10 @@ class Templating
             . DIRECTORY_SEPARATOR . '..'
             . DIRECTORY_SEPARATOR . 'templates'
             . DIRECTORY_SEPARATOR . $template;
+
+        if (!file_exists($path)) {
+            throw new \Exception("Template not found: $path");
+        }
 
         require $path;
         $html = ob_get_clean();
