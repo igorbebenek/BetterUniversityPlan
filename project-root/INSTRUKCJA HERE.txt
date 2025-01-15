@@ -1,0 +1,36 @@
+1. Przygotowanie środowiska
+
+a) Zainstaluj XAMPPA
+
+b) Skonfiguruj środowisko
+
+Po zainstalowaniu wymaganych narzędzi, wykonaj poniższe kroki:
+Skopiuj folder do C:/xampp/htdocs/project-root
+
+2. Konfiguracja bazy danych
+
+a) Uruchom phpMyAdmin
+
+    Otwórz przeglądarkę internetową i przejdź do http://localhost/phpmyadmin.
+
+b) Utwórz bazę danych
+
+    Zaloguj się do phpMyAdmin i stwórz nową bazę danych o nazwie schedule_db.
+    Następnie załaduj skrypt SQL, który zainicjuje odpowiednie tabele w bazie danych:
+    Wejdź do zakładki SQL w phpMyAdmin i załaduj plik /database/init.sql lub wklej jego zawartość do okna zapytań i kliknij Wykonaj.
+
+3. Pobranie danych
+
+Otwórz terminal. Przejdź do katalogu projektu, w którym znajduje się skrypt do pobierania danych. W przypadku XAMPP będzie to: cd C:/xampp/htdocs/project-root/scripts
+Uruchom skrypt fetchData.php: php fetchData.php
+Skrypt pobierze dane studentów z zewnętrznych źródeł i zapisze je w utworzonej bazie danych schedule_db.
+
+4. Uruchomienie aplikacji
+
+a) Uruchom serwer Apache oraz MySQL w XAMPPIE
+
+b) Sprawdź aplikację w przeglądarce
+
+Po uruchomieniu serwera WWW, otwórz przeglądarkę i wprowadź poniższy adres URL:
+
+http://localhost/project-root/public/index.php
