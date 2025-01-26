@@ -1,130 +1,133 @@
 <?php
-set_time_limit(3000);
 
-function fetchWithCurl($urls) {
-    $multiCurl = curl_multi_init();
-    $curlHandles = [];
-    $results = [];
+require_once __DIR__ . '/src/Model/Zajecia.php';
+require_once __DIR__ . '/src/Service/Config.php';
 
-    foreach ($urls as $key => $url) {
-        $curlHandles[$key] = curl_init();
-        curl_setopt($curlHandles[$key], CURLOPT_URL, $url);
-        curl_setopt($curlHandles[$key], CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($curlHandles[$key], CURLOPT_TIMEOUT, 10);
-        curl_multi_add_handle($multiCurl, $curlHandles[$key]);
-    }
+use App\Model\Zajecia;
 
-    $active = null;
-    do {
-        $status = curl_multi_exec($multiCurl, $active);
-        curl_multi_select($multiCurl, 0.5);
-    } while ($active && $status == CURLM_OK);
+set_time_limit(0);
 
-    foreach ($curlHandles as $key => $ch) {
-        $response = curl_multi_getcontent($ch);
-        $results[$key] = $response !== false ? json_decode($response, true) : null;
-        curl_multi_remove_handle($multiCurl, $ch);
-        curl_close($ch);
-    }
-
-    curl_multi_close($multiCurl);
-    return $results;
-}
-
-
-function saveToFile($filename, $data) {
-    $existingData = [];
-    if (file_exists($filename)) {
-        $existingContent = file_get_contents($filename);
-        if (!empty($existingContent)) {
-            $existingData = json_decode($existingContent, true);
-        }
-    }
-
-    $existingData[] = $data;
-
-    file_put_contents($filename, json_encode($existingData, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
-}
-
-function fetchTeacherSchedule($teacherName, $startDate, $endDate) {
-    $url = "https://plan.zut.edu.pl/schedule_student.php?teacher=" . urlencode($teacherName) . "&start=" . urlencode($startDate) . "&end=" . urlencode($endDate);
-    
+function fetchWithCurl($url) {
     $ch = curl_init();
     curl_setopt($ch, CURLOPT_URL, $url);
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
     curl_setopt($ch, CURLOPT_TIMEOUT, 10);
-    
+    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
     $response = curl_exec($ch);
-    curl_close($ch);
 
+    if (curl_errno($ch)) {
+        echo "cURL error: " . curl_error($ch) . "\n";
+    }
+
+    curl_close($ch);
     return json_decode($response, true);
 }
 
-function scrapeAllStudentsWithTeachers($startDate, $endDate, $batchSize = 100) {
-    $filename = 'results.txt';
-    $maxIndex = 51555;
-    $teachers = [];
+function saveToTableUnique($pdo, $tableName, $uniqueFields, $data) {
+    $conditions = [];
+    foreach ($uniqueFields as $field) {
+        $conditions[] = "$field = :$field";
+    }
+    $whereClause = implode(' AND ', $conditions);
 
-    for ($startIndex = 50000; $startIndex <= $maxIndex; $startIndex += $batchSize) {
-        $urls = [];
-        $endIndex = min($startIndex + $batchSize - 1, $maxIndex);
+    $sqlCheck = "SELECT id FROM $tableName WHERE $whereClause";
+    $stmt = $pdo->prepare($sqlCheck);
+    $stmt->execute(array_intersect_key($data, array_flip($uniqueFields)));
+    $existing = $stmt->fetchColumn();
 
-        for ($i = $startIndex; $i <= $endIndex; $i++) {
-            $studentNumber = str_pad($i, 5, "0", STR_PAD_LEFT);
-            $urls[$studentNumber] = "https://plan.zut.edu.pl/schedule_student.php?number=$studentNumber&start=$startDate&end=$endDate";
-        }
-
-        $results = fetchWithCurl($urls);
-
-$batchResults = [];
-
-foreach ($results as $studentNumber => $data) {
-    if (!empty($data) && count($data) > 1) {
-        echo "Dane znalezione dla studenta: $studentNumber\n";
-
-        foreach ($data as $lesson) {
-            if (isset($lesson['worker']) && !in_array($lesson['worker'], $teachers)) {
-                $teachers[] = $lesson['worker'];
-            }
-        }
-
-        $batchResults[] = [
-            'studentNumber' => $studentNumber,
-            'schedule' => $data
-        ];
-    } else {
-        echo "Brak danych dla studenta: $studentNumber\n";
+    if ($existing) {
+        return $existing; // Zwracamy istniejące ID, jeśli rekord już istnieje
     }
 
-    if (count($batchResults) >= 100) {
-            saveToFile($filename, $batchResults);
-            $batchResults = [];
-        }
-    }
+    $columns = implode(',', array_keys($data));
+    $placeholders = implode(',', array_map(fn($key) => ":$key", array_keys($data)));
+    $sqlInsert = "INSERT INTO $tableName ($columns) VALUES ($placeholders)";
+    $stmt = $pdo->prepare($sqlInsert);
+    $stmt->execute($data);
 
-    if (count($batchResults) > 0) {
-        saveToFile($filename, $batchResults);
-    }
+    return $pdo->lastInsertId();
 }
 
-    foreach ($teachers as $teacherName) {
-        echo "Scrapuj� plan wyk�adowcy: $teacherName\n";
-        $teacherSchedule = fetchTeacherSchedule($teacherName, $startDate, $endDate);
-        if (!empty($teacherSchedule)) {
+function processAndSaveData($studentNumber, $startDate, $endDate) {
+    $url = "https://plan.zut.edu.pl/schedule_student.php?number=$studentNumber&start=$startDate&end=$endDate";
+    $data = fetchWithCurl($url);
 
-            saveToFile('teachers_results.txt', [
-                'teacherName' => $teacherName,
-                'schedule' => $teacherSchedule
+    if (!empty($data)) {
+        $pdo = new PDO(App\Service\Config::get('db_dsn'), App\Service\Config::get('db_user'), App\Service\Config::get('db_pass'));
+
+        foreach ($data as $lesson) {
+            // Pomijamy niepełne dane
+            if (empty($lesson['start']) || empty($lesson['end'])) {
+                echo "Pominięto niepełne dane dla studenta $studentNumber\n";
+                continue;
+            }
+
+            $workerId = saveToTableUnique($pdo, 'Wykladowca', ['nazwisko_imie'], [
+                'nazwisko_imie' => $lesson['worker'] ?? 'Nieznany'
             ]);
-        } else {
-            echo "Brak danych dla wyk�adowcy: $teacherName\n";
+
+            $roomId = saveToTableUnique($pdo, 'Sala_z_budynkiem', ['budynek_sala'], [
+                'budynek_sala' => $lesson['room'] ?? 'Nieznany',
+                'wydzial_id' => 1
+            ]);
+
+            $tokId = saveToTableUnique($pdo, 'Tok_studiow', ['typ_skrot', 'tryb_skrot'], [
+                'typ' => 'Licencjackie',
+                'tryb' => 'Stacjonarne',
+                'typ_skrot' => 'Lic',
+                'tryb_skrot' => 'Stacj.'
+            ]);
+
+            $subjectId = saveToTableUnique($pdo, 'Przedmiot', ['nazwa', 'forma', 'tok_studiow_id'], [
+                'nazwa' => $lesson['subject'] ?? 'Nieznany',
+                'forma' => $lesson['lesson_form'] ?? 'Nieznana',
+                'tok_studiow_id' => $tokId
+            ]);
+
+            $groupId = saveToTableUnique($pdo, 'Grupa', ['nazwa'], [
+                'nazwa' => $lesson['group_name'] ?? 'Nieznana'
+            ]);
+
+            saveToTableUnique($pdo, 'Student', ['id'], [
+                'id' => $studentNumber
+            ]);
+
+            $zajeciaData = [
+                'data_start' => $lesson['start'] ?? null,
+                'data_koniec' => $lesson['end'] ?? null,
+                'zastepca' => $lesson['worker_cover'] ?? null,
+                'semestr' => 1,
+                'wykladowca_id' => $workerId,
+                'wydzial_id' => 1,
+                'grupa_id' => $groupId,
+                'tok_studiow_id' => $tokId,
+                'przedmiot_id' => $subjectId,
+                'sala_id' => $roomId,
+                'student_id' => $studentNumber,
+            ];
+
+            $existingZajecia = saveToTableUnique($pdo, 'Zajecia', [
+                'data_start', 'data_koniec', 'wykladowca_id', 'przedmiot_id', 'sala_id', 'student_id'
+            ], $zajeciaData);
+
+            if ($existingZajecia) {
+                echo "Zajęcia już istnieją dla studenta $studentNumber: " . $lesson['start'] . "\n";
+            } else {
+                echo "Zapisano nowe zajęcia dla studenta $studentNumber\n";
+            }
         }
+    } else {
+        echo "Brak danych dla studenta $studentNumber\n";
     }
 }
 
 $startDate = '2025-01-13T00:00:00+01:00';
 $endDate = '2025-01-20T00:00:00+01:00';
 
-scrapeAllStudentsWithTeachers($startDate, $endDate);
+for ($studentNumber = 00000; $studentNumber <= 99999; $studentNumber++) {
+    processAndSaveData($studentNumber, $startDate, $endDate);
+}
 
-?>
+echo "Proces zakończony.\n";
+
+

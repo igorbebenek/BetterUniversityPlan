@@ -1,0 +1,504 @@
+body {
+    font-family: "Inter", serif;
+    margin: 0;
+    padding: 0;
+    background-color: #f4f4f4;
+    color: #333;
+}
+
+header {
+    padding: 20px;
+    text-align: left;
+    background: #fff;
+    border-bottom: 1px solid #ddd;
+}
+
+.filters {
+    display: flex;
+    justify-content: left;
+    gap: 10px;
+    margin-top: 10px;
+}
+
+    .filters input {
+        padding: 8px;
+        border: 1px solid #ccc;
+        border-radius: 10px;
+    }
+
+    .filters button {
+        padding: 8px;
+        border-radius: 10px;
+        border: 0;
+    }
+
+    .filters .search {
+        background-color: #007AFF;
+        color: white;
+    }
+
+    .filters .clear {
+        background-color: #EFEFF4;
+        color: #007AFF;
+    }
+
+    .filters button:hover {
+        background-color: #0056b3;
+    }
+
+.date-range {
+    padding: 15px;
+    text-align: left;
+    background: #fff;
+    border-bottom: 1px solid #ddd;
+    display: flex;
+    justify-content: flex-start;
+    align-items: center;
+    gap: 15px;
+}
+
+    .date-range span {
+        display: flex;
+        align-items: center;
+    }
+
+    .date-range .material-symbols-outlined {
+        font-variation-settings: 'FILL' 0, 'wght' 500, 'GRAD' 0, 'opsz' 36;
+        cursor: pointer;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        border-radius: 1000px;
+        transition: background-color 0.3s ease;
+    }
+
+        .date-range .material-symbols-outlined:hover {
+            background-color: #f0f0f0;
+        }
+
+.schedule {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 0em;
+    padding: 20px;
+}
+
+.schedule.week-view {
+    grid-template-columns: repeat(7, 1fr);
+}
+
+.schedule.day-view {
+    grid-template-columns: 1fr;
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+.day-view .lesson {
+    margin: 15px auto;
+    width: 100%;
+}
+
+.view-selector {
+    position: relative;
+    margin-left: auto;
+    margin-right: 20px;
+}
+.current-view {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    cursor: pointer;
+    padding: 5px 10px;
+    border-radius: 5px;
+}
+
+.current-view:hover {
+    background-color: #f0f0f0;
+}
+
+.view-dropdown {
+    display: none;
+    position: absolute;
+    top: 100%;
+    right: 0;
+    background-color: white;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    z-index: 1000;
+}
+
+.view-option {
+    padding: 8px 20px;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+.view-option:hover {
+    background-color: #f0f0f0;
+}
+
+.day {
+    border-radius: 5px;
+    padding: 10px;
+    text-align: center;
+}
+
+    .day h3 {
+        margin: 0;
+        font-size: 18px;
+        background-color: #E0E0E0;
+        color: black;
+        padding: 5px;
+        border-radius: 5px;
+    }
+
+.lesson {
+    background-color: white;
+    border-radius: 5px;
+    padding: 10px;
+    margin-top: 10px;
+    box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+    .lesson.green {
+        background-color: #CCFFD8;
+    }
+
+    .lesson h4 {
+        margin: 0;
+        font-size: 16px;
+    }
+
+    .lesson p {
+        margin: 5px 0;
+        font-size: 14px;
+        text-align: left;
+        display: flex;
+        justify-content: flex-start;
+        align-items: center;
+        gap: 5px;
+    }
+
+    .lesson.laboratorium {
+        background-color: #6BCB77;
+    }
+
+    .lesson.wyklad {
+        background-color: #4D96FF;
+    }
+
+    .lesson.audytoryjne {
+        background-color: #FFD93D;
+    }
+
+    .lesson.projekt {
+        background-color: #FF6B6B;
+    }
+
+    .lesson.lektorat {
+        background-color: #FF8E00;
+    }
+
+
+    .lesson .material-symbols-outlined {
+        font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+    }
+
+    .lesson p i {
+        color: #007bff;
+        font-size: 16px;
+    }
+
+footer {
+    padding: 20px;
+    background-color: #fff;
+    text-align: center;
+    border-top: 1px solid #ddd;
+}
+
+.legend {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 20px;
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    font-size: 14px;
+}
+
+    .legend-item .laboratorium {
+        background-color: #6BCB77;
+    }
+
+    .legend-item .wyklad {
+        background-color: #4D96FF;
+    }
+
+    .legend-item .audytoryjne {
+        background-color: #FFD93D;
+    }
+
+    .legend-item .projekt {
+        background-color: #FF6B6B;
+    }
+
+    .legend-item .lektorat {
+        background-color: #FF8E00;
+    }
+
+
+.legend-color {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    margin-right: 8px;
+}
+
+.schedule.month-view {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    padding: 20px;
+    background-color: white;
+    border-radius: 10px;
+    margin: 20px;
+}
+
+.month-header {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    background-color: #f8f9fa;
+    padding: 10px 0;
+    border-bottom: 1px solid #dee2e6;
+}
+
+.month-day-name {
+    text-align: center;
+    font-weight: 500;
+    color: #495057;
+}
+
+.month-week {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    border-bottom: 1px solid #dee2e6;
+}
+
+.month-day {
+    min-height: 120px;
+    padding: 8px;
+    border-right: 1px solid #dee2e6;
+    position: relative;
+}
+
+.month-day:last-child {
+    border-right: none;
+}
+
+.month-day.empty {
+    background-color: #f8f9fa;
+}
+
+.day-number {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    font-size: 14px;
+    color: #495057;
+}
+
+.month-lesson {
+    margin: 25px 0 5px 0;
+    padding: 4px 6px;
+    border-radius: 4px;
+    font-size: 12px;
+    cursor: pointer;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+.month-lesson .lesson-time {
+    font-weight: 500;
+    font-size: 11px;
+}
+
+.month-lesson .lesson-title {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.month-lesson.laboratorium {
+    background-color: #6BCB77;
+    color: white;
+}
+
+.month-lesson.wyklad {
+    background-color: #4D96FF;
+    color: white;
+}
+
+.month-lesson.audytoryjne {
+    background-color: #FFD93D;
+}
+
+.month-lesson.projekt {
+    background-color: #FF6B6B;
+    color: white;
+}
+
+.month-lesson.lektorat {
+    background-color: #FF8E00;
+    color: white;
+}
+
+/*
+tablet
+*/
+@media (min-width: 769px) and (max-width: 1024px) {
+    .schedule {
+        padding: 10px;
+        gap: 0.5em;
+    }
+
+    .lesson {
+        padding: 8px;
+    }
+
+    .lesson h4 {
+        font-size: 14px;
+    }
+
+    .lesson p {
+        font-size: 12px;
+    }
+
+    .filters {
+        flex-wrap: wrap;
+        padding: 0 10px;
+    }
+
+    .filters input {
+        flex: 1;
+        min-width: 150px;
+    }
+
+    .legend {
+        padding: 10px;
+        gap: 10px;
+    }
+
+    .legend-item {
+        font-size: 12px;
+    }
+
+    .month-view {
+        margin: 10px;
+    }
+
+    .month-day {
+        min-height: 100px;
+    }
+
+    .month-lesson {
+        margin: 20px 0 5px 0;
+        padding: 3px 5px;
+    }
+}
+
+/*
+mobilka
+*/
+@media (max-width: 768px) {
+    .schedule {
+        grid-template-columns: 1fr;
+        padding: 10px;
+    }
+
+    .schedule.week-view {
+        grid-template-columns: 1fr;
+    }
+
+    .filters {
+        flex-direction: column;
+        padding: 0 10px;
+    }
+
+    .filters input,
+    .filters button {
+        width: 100%;
+    }
+
+    .date-range {
+        flex-direction: column;
+        padding: 10px;
+        gap: 10px;
+    }
+
+    .legend {
+        flex-direction: column;
+        align-items: flex-start;
+        padding: 10px;
+        gap: 8px;
+    }
+
+    .day {
+        margin-bottom: 15px;
+    }
+
+    .day h3 {
+        font-size: 16px;
+    }
+
+    .lesson {
+        margin: 8px 0;
+    }
+
+    .lesson h4 {
+        font-size: 14px;
+    }
+
+    .lesson p {
+        font-size: 12px;
+    }
+
+    .month-view {
+        margin: 5px;
+    }
+
+    .month-header {
+        display: none;
+    }
+
+    .month-week {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .month-day {
+        min-height: auto;
+        border-right: none;
+        border-bottom: 1px solid #dee2e6;
+    }
+
+    .month-day.empty {
+        display: none;
+    }
+
+    .month-lesson {
+        margin: 15px 0 5px 0;
+    }
+
+    .view-selector {
+        margin-right: 10px;
+    }
+
+    .current-view {
+        padding: 3px 8px;
+    }
+}

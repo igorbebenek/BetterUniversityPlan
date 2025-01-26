@@ -18,7 +18,115 @@ class Zajecia
     private ?int $sala_id = null;
     private ?int $student_id = null;
 
-    // Gettery i settery
+    private ?string $teacher_name = null;
+    private ?string $room_name = null;
+    private ?string $subject_name = null;
+
+    // Gettery i settery dla relacji
+    public function getTeacherName(): ?string { return $this->teacher_name; }
+    public function setTeacherName(?string $teacher_name): void { $this->teacher_name = $teacher_name; }
+
+    private ?string $lesson_type = null;
+
+    public function getLessonType(): ?string {
+        return $this->lesson_type ? $this->sanitizeClassName($this->lesson_type) : null;
+    }
+
+    public function setLessonType(?string $lesson_type): void {
+        $this->lesson_type = $lesson_type;
+    }
+
+    public static function findFilteredWithRelations(array $filters): array
+    {
+        $pdo = new \PDO(Config::get('db_dsn'), Config::get('db_user'), Config::get('db_pass'));
+
+        $query = "
+SELECT 
+    z.*, 
+    w.nazwisko_imie AS teacher_name,
+    s.budynek_sala AS room_name,
+    p.nazwa AS subject_name,
+    p.forma AS lesson_type
+FROM 
+    zajecia z
+LEFT JOIN 
+    wykladowca w ON z.wykladowca_id = w.id
+LEFT JOIN 
+    sala_z_budynkiem s ON z.sala_id = s.id
+LEFT JOIN 
+    przedmiot p ON z.przedmiot_id = p.id
+WHERE 
+    1=1
+";
+
+        $params = [];
+
+        // Filtr nauczyciela
+        if (!empty($filters['teacher'])) {
+            $query .= " AND w.nazwisko_imie LIKE :teacher";
+            $params['teacher'] = '%' . $filters['teacher'] . '%';
+        }
+
+        // Filtr sali
+        if (!empty($filters['room'])) {
+            $query .= " AND s.budynek_sala LIKE :room";
+            $params['room'] = '%' . $filters['room'] . '%';
+        }
+
+        // Filtr przedmiotu
+        if (!empty($filters['subject'])) {
+            $query .= " AND p.nazwa LIKE :subject";
+            $params['subject'] = '%' . $filters['subject'] . '%';
+        }
+
+        // Filtr numeru studenta
+        if (!empty($filters['student_number'])) {
+            $query .= " AND z.student_id = :student_number";
+            $params['student_number'] = $filters['student_number'];
+        }
+
+        // Filtr daty weekendu (piątek i niedziela)
+        if (!empty($filters['start_date']) && !empty($filters['end_date'])) {
+            $query .= " AND z.data_start >= :start_date AND z.data_koniec <= :end_date";
+            $params['start_date'] = $filters['start_date'];
+            $params['end_date'] = $filters['end_date'];
+        }
+
+        $query .= " ORDER BY z.data_start";
+
+        $statement = $pdo->prepare($query);
+        $statement->execute($params);
+
+        $zajeciaArray = [];
+        while ($row = $statement->fetch(\PDO::FETCH_ASSOC)) {
+            $zajecia = self::fromArray($row);
+            $zajecia->teacher_name = $row['teacher_name'] ?? null;
+            $zajecia->room_name = $row['room_name'] ?? null;
+            $zajecia->subject_name = $row['subject_name'] ?? null;
+            $zajecia->data_start = $row['data_start'] ?? null;
+            $zajecia->data_koniec = $row['data_koniec'] ?? null;
+            $zajeciaArray[] = $zajecia;
+        }
+
+        error_log("Query: $query");
+        error_log("Params: " . print_r($params, true));
+
+        return $zajeciaArray;
+    }
+
+
+
+    // Gettery i settery dla podstawowych pól
+
+    public function getSubjectName(): ?string {
+        return $this->subject_name;
+    }
+
+    public function getRoomName(): ?string {
+        return $this->room_name;
+    }
+
+
     public function getId(): ?int { return $this->id; }
     public function setId(int $id): void { $this->id = $id; }
 
@@ -55,15 +163,29 @@ class Zajecia
     public function getStudentId(): ?int { return $this->student_id; }
     public function setStudentId(?int $student_id): void { $this->student_id = $student_id; }
 
+    // Pobieranie danych z relacjami
+
     // Metoda do tworzenia obiektu z tablicy
     public static function fromArray($array): Zajecia
     {
         $zajecia = new self();
+        $zajecia->lesson_type = $array['lesson_type'] ?? null;
         $zajecia->fill($array);
         return $zajecia;
     }
 
-    // Metoda do wypełniania obiektu danymi z tablicy
+    private function sanitizeClassName(string $name): string {
+        $replace = [
+            'ą' => 'a', 'ć' => 'c', 'ę' => 'e', 'ł' => 'l',
+            'ń' => 'n', 'ó' => 'o', 'ś' => 's', 'ż' => 'z', 'ź' => 'z',
+            'Ą' => 'A', 'Ć' => 'C', 'Ę' => 'E', 'Ł' => 'L',
+            'Ń' => 'N', 'Ó' => 'O', 'Ś' => 'S', 'Ż' => 'Z', 'Ź' => 'Z',
+        ];
+        return strtr($name, $replace);
+    }
+
+
+    // Metoda do wypełniania obiektu
     public function fill($array): Zajecia
     {
         if (isset($array['id']) && !$this->getId()) {
@@ -102,95 +224,7 @@ class Zajecia
         if (isset($array['student_id'])) {
             $this->setStudentId($array['student_id']);
         }
+
         return $this;
-    }
-
-    // Metoda do zapisu/aktualizacji danych
-    public function save(): void
-    {
-        $pdo = new \PDO(Config::get('db_dsn'), Config::get('db_user'), Config::get('db_pass'));
-        if (!$this->getId()) {
-            // Wstawianie nowych danych
-            $sql = "INSERT INTO zajecia (data_start, data_koniec, zastepca, semestr, wykladowca_id, wydzial_id, grupa_id, tok_studiow_id, przedmiot_id, sala_id, student_id) 
-                    VALUES (:data_start, :data_koniec, :zastepca, :semestr, :wykladowca_id, :wydzial_id, :grupa_id, :tok_studiow_id, :przedmiot_id, :sala_id, :student_id)";
-            $statement = $pdo->prepare($sql);
-            $statement->execute([
-                'data_start' => $this->getDataStart(),
-                'data_koniec' => $this->getDataKoniec(),
-                'zastepca' => $this->getZastepca(),
-                'semestr' => $this->getSemestr(),
-                'wykladowca_id' => $this->getWykladowcaId(),
-                'wydzial_id' => $this->getWydzialId(),
-                'grupa_id' => $this->getGrupaId(),
-                'tok_studiow_id' => $this->getTokStudiowId(),
-                'przedmiot_id' => $this->getPrzedmiotId(),
-                'sala_id' => $this->getSalaId(),
-                'student_id' => $this->getStudentId(),
-            ]);
-            $this->setId($pdo->lastInsertId());
-        } else {
-            // Aktualizacja istniejącego rekordu
-            $sql = "UPDATE zajecia SET data_start = :data_start, data_koniec = :data_koniec, zastepca = :zastepca, semestr = :semestr, 
-                    wykladowca_id = :wykladowca_id, wydzial_id = :wydzial_id, grupa_id = :grupa_id, tok_studiow_id = :tok_studiow_id, 
-                    przedmiot_id = :przedmiot_id, sala_id = :sala_id, student_id = :student_id WHERE id = :id";
-            $statement = $pdo->prepare($sql);
-            $statement->execute([
-                'data_start' => $this->getDataStart(),
-                'data_koniec' => $this->getDataKoniec(),
-                'zastepca' => $this->getZastepca(),
-                'semestr' => $this->getSemestr(),
-                'wykladowca_id' => $this->getWykladowcaId(),
-                'wydzial_id' => $this->getWydzialId(),
-                'grupa_id' => $this->getGrupaId(),
-                'tok_studiow_id' => $this->getTokStudiowId(),
-                'przedmiot_id' => $this->getPrzedmiotId(),
-                'sala_id' => $this->getSalaId(),
-                'student_id' => $this->getStudentId(),
-                'id' => $this->getId(),
-            ]);
-        }
-    }
-
-    // Metoda usuwania rekordu
-    public function delete(): void
-    {
-        $pdo = new \PDO(Config::get('db_dsn'), Config::get('db_user'), Config::get('db_pass'));
-        $sql = "DELETE FROM zajecia WHERE id = :id";
-        $statement = $pdo->prepare($sql);
-        $statement->execute(['id' => $this->getId()]);
-    }
-
-    // Metoda do pobrania wszystkich zajęć
-    public static function findAll(): array
-    {
-        $pdo = new \PDO(Config::get('db_dsn'), Config::get('db_user'), Config::get('db_pass'));
-        $sql = "SELECT * FROM zajecia";
-        $statement = $pdo->query($sql);
-
-        $zajeciaArray = [];
-        $data = $statement->fetchAll(\PDO::FETCH_ASSOC);
-
-        // Zamieniamy każdą tablicę na obiekt Zajecia
-        foreach ($data as $item) {
-            $zajeciaArray[] = self::fromArray($item);
-        }
-
-        return $zajeciaArray;
-    }
-
-    // Metoda do pobrania zajęć po ID
-    public static function findById(int $id): ?Zajecia
-    {
-        $pdo = new \PDO(Config::get('db_dsn'), Config::get('db_user'), Config::get('db_pass'));
-        $sql = "SELECT * FROM zajecia WHERE id = :id";
-        $statement = $pdo->prepare($sql);
-        $statement->execute(['id' => $id]);
-        $data = $statement->fetch(\PDO::FETCH_ASSOC);
-        if ($data) {
-            $zajecia = new self();
-            $zajecia->fill($data);
-            return $zajecia;
-        }
-        return null;
     }
 }

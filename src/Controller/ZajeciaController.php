@@ -10,13 +10,27 @@ class ZajeciaController
 {
     public function indexAction(Templating $templating, Router $router): ?string
     {
-        $zajecia = Zajecia::findAll();
-        $html = $templating->render('zajecia/index.html.php', [
+        // Pobieranie filtrów z URL (GET)
+        $filters = [
+            'student_number' => $_GET['student_number'] ?? null,
+            'teacher' => $_GET['teacher'] ?? null,
+            'room' => $_GET['room'] ?? null,
+            'subject' => $_GET['subject'] ?? null,
+            'group' => $_GET['group'] ?? null,
+            'start_date' => $_GET['start_date'] ?? null,
+            'end_date' => $_GET['end_date'] ?? null,
+            //'day' => $_GET['day'] ?? null
+        ];
+
+        $zajecia = Zajecia::findFilteredWithRelations($filters);
+
+        return $templating->render('base.html.php', [
             'zajecia' => $zajecia,
-            'router' => $router,
+            'filters' => $filters,
         ]);
-        return $html;
     }
+
+
 
     public function createAction(?array $requestPost, Templating $templating, Router $router): ?string
     {
