@@ -8,6 +8,7 @@ $router = new \App\Service\Router();
 
 $action = $_REQUEST['action'] ?? null;
 
+
 switch ($action) {
     case 'zajecia-index':
     case null:
@@ -31,6 +32,14 @@ switch ($action) {
         $controller->deleteAction((int)($_REQUEST['id'] ?? 0), $router);
         $view = null;
         break;
+    case 'api-get-schedule':
+        $controller = new \App\Controller\ApiController();
+        echo $controller->getSchedule();
+        exit;
+    case 'api-get-schedule-by-id':
+        $controller = new \App\Controller\ApiController();
+        echo $controller->getScheduleById((int)($_GET['id'] ?? 0));
+        exit;
     default:
         $view = 'Not found';
         break;

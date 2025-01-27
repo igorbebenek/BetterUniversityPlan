@@ -41,8 +41,10 @@ class Zajecia
         $pdo = new \PDO(Config::get('db_dsn'), Config::get('db_user'), Config::get('db_pass'));
 
         $query = "
-SELECT 
-    z.*, 
+SELECT DISTINCT 
+    z.id AS zajecia_id,
+    z.data_start,
+    z.data_koniec,
     w.nazwisko_imie AS teacher_name,
     s.budynek_sala AS room_name,
     p.nazwa AS subject_name,
@@ -58,6 +60,7 @@ LEFT JOIN
 WHERE 
     1=1
 ";
+
 
         $params = [];
 
@@ -92,7 +95,18 @@ WHERE
             $params['end_date'] = $filters['end_date'];
         }
 
-        $query .= " ORDER BY z.data_start";
+        $query .= "
+GROUP BY 
+    z.data_start 
+ORDER BY 
+    z.data_start;
+";
+
+        //$query .= " ORDER BY z.data_start";
+
+        if (empty($params)) {
+            return [];
+        }
 
         $statement = $pdo->prepare($query);
         $statement->execute($params);
