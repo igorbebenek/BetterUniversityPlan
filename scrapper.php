@@ -121,8 +121,8 @@ function processAndSaveData($studentNumber, $startDate, $endDate) {
     }
 }
 
-$startDate = '2025-01-13T00:00:00+01:00';
-$endDate = '2025-01-20T00:00:00+01:00';
+$startDate = '2025-01-01T00:00:00+01:00';
+$endDate = '2025-01-30T00:00:00+01:00';
 
 for ($studentNumber = 00000; $studentNumber <= 99999; $studentNumber++) {
     processAndSaveData($studentNumber, $startDate, $endDate);
